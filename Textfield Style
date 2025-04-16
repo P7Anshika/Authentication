@@ -1,0 +1,32 @@
+Here's how to customize the height and width of the TextField while maintaining responsiveness:
+
+```jsx
+<TextField
+  fullWidth
+  label="API Key"
+  variant="outlined"
+  value={apiKey}
+  onChange={handleApiKeyChange}
+  className="mb-4"
+  size={isSmallScreen ? 'small' : 'medium'}
+  sx={{
+    // Width control - overrides fullWidth if needed
+    width: '100%', // Default to full width
+    maxWidth: '600px', // Optional max width constraint
+    
+    // Height control
+    '& .MuiOutlinedInput-root': {
+      height: isSmallScreen ? '40px' : '48px', // Custom heights for different screens
+    },
+    
+    // Input text styling
+    '& .MuiInputBase-input': {
+      padding: isSmallScreen ? '8px 12px' : '12px 14px', // Adjust padding based on screen size
+    },
+    
+    // Label styling when focused
+    '& .Mui-focused': {
+      transform: 'translate(14px, -9px) scale(0.75)',
+    },
+  }}
+/>
