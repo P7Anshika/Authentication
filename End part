@@ -1,0 +1,134 @@
+<Paper 
+        elevation={3} 
+        className={`w-full ${isMobile ? 'p-4' : 'p-6'}`}
+        sx={{
+          maxWidth: isMobile ? '100%' : '400px',
+          margin: isMobile ? '0' : 'auto'
+        }}
+      >
+        <Typography 
+          variant={isMobile ? 'h6' : 'h5'} 
+          component="h1" 
+          className="text-center mb-6"
+          sx={{
+            fontSize: isMobile ? '1.25rem' : '1.5rem'
+          }}
+        >
+          Authentication
+        </Typography>
+        
+        <form onSubmit={handleSubmit}>
+          <FormControl fullWidth className="mb-4" size={isMobile ? 'small' : 'medium'}>
+            <InputLabel id="auth-method-label">Authentication Method</InputLabel>
+            <Select
+              labelId="auth-method-label"
+              id="auth-method"
+              value={authMethod}
+              label="Authentication Method"
+              onChange={handleAuthMethodChange}
+            >
+              <MenuItem value="">Select a method</MenuItem>
+              <MenuItem value="apiKey">API Key</MenuItem>
+              <MenuItem value="oauth">OAuth</MenuItem>
+              <MenuItem value="jwt">JWT</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* API Key Fields */}
+          {authMethod === 'apiKey' && (
+            <Box className="mb-4">
+              <TextField
+                fullWidth
+                label="API Key"
+                variant="outlined"
+                value={apiKey}
+                onChange={handleApiKeyChange}
+                className="mb-4"
+                size={isMobile ? 'small' : 'medium'}
+              />
+            </Box>
+          )}
+
+          {/* OAuth Fields */}
+          {authMethod === 'oauth' && (
+            <Box className="mb-4">
+              <TextField
+                fullWidth
+                label="Username"
+                variant="outlined"
+                name="username"
+                value={oauthCredentials.username}
+                onChange={handleOauthChange}
+                className="mb-4"
+                size={isMobile ? 'small' : 'medium'}
+              />
+              <TextField
+                fullWidth
+                label="Password"
+                variant="outlined"
+                type="password"
+                name="password"
+                value={oauthCredentials.password}
+                onChange={handleOauthChange}
+                size={isMobile ? 'small' : 'medium'}
+              />
+            </Box>
+          )}
+
+          {/* JWT Fields */}
+          {authMethod === 'jwt' && (
+            <Box className="mb-4">
+              <TextField
+                fullWidth
+                label="Username"
+                variant="outlined"
+                name="username"
+                value={jwtCredentials.username}
+                onChange={handleJwtChange}
+                className="mb-4"
+                size={isMobile ? 'small' : 'medium'}
+              />
+              <TextField
+                fullWidth
+                label="Password"
+                variant="outlined"
+                type="password"
+                name="password"
+                value={jwtCredentials.password}
+                onChange={handleJwtChange}
+                className="mb-4"
+                size={isMobile ? 'small' : 'medium'}
+              />
+              <TextField
+                fullWidth
+                label="Algorithm"
+                variant="outlined"
+                name="algorithm"
+                value={jwtCredentials.algorithm}
+                InputProps={{
+                  readOnly: true,
+                }}
+                size={isMobile ? 'small' : 'medium'}
+              />
+            </Box>
+          )}
+
+          {authMethod && (
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              className="mt-4"
+              size={isMobile ? 'small' : 'medium'}
+            >
+              Authenticate
+            </Button>
+          )}
+        </form>
+      </Paper>
+    </div>
+  );
+};
+
+export default AuthComponent;
