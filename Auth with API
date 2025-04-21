@@ -1,0 +1,326 @@
+import React, { useState, useEffect } from 'react';
+import { Grid, Button, Box, TextField, MenuItem, Select, Typography } from '@mui/material';
+import { styled } from "@mui/system";
+import axios from 'axios';
+
+const StyledSelect = styled(Select)({
+  // Add your custom styles here if needed
+});
+
+const Back = styled(Button)({
+  // Add your custom styles here if needed
+});
+
+const Save = styled(Button)({
+  // Add your custom styles here if needed
+});
+
+const API_BASE_URL = 'http://172.18.4.95:6060/terragate/v1/authentication';
+const PARTNER_ID = '10001'; // Or get this from props/context
+
+const Authentication = ({ backward }) => {
+    const [authMethod, setAuthMethod] = useState('select');
+    const [apiKey, setApiKey] = useState('');
+    const [oauthDetails, setOauthDetails] = useState({
+        username: '',
+        password: ''
+    });
+    const [jwtDetails, setJwtDetails] = useState({
+        username: '',
+        password: '',
+        hashingAlgo: 'HS256'
+    });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Fetch auth details when component mounts or partnerId changes
+    useEffect(() => {
+        const fetchAuthDetails = async () => {
+            try {
+                setIsLoading(true);
+                const response = await axios.get(`${API_BASE_URL}?partnerId=${PARTNER_ID}`);
+                const data = response.data;
+                
+                // Update state based on fetched data
+                if (data.authType) {
+                    setAuthMethod(data.authType.toLowerCase().replace('-', ''));
+                    
+                    // Set the corresponding auth method details
+                    if (data.authType === 'API-KEY' && data.apikey) {
+                        setApiKey(data.apikey.apikey || '');
+                    } else if (data.authType === 'OAUTH' && data.authCredentials) {
+                        setOauthDetails({
+                            username: data.authCredentials.username || '',
+                            password: data.authCredentials.password || ''
+                        });
+                    } else if (data.authType === 'JWT' && data.jwt) {
+                        setJwtDetails({
+                            username: data.jwt.username || '',
+                            password: data.jwt.password || '',
+                            hashingAlgo: 'HS256'
+                        });
+                    }
+                }
+            } catch (err) {
+                setError(err.message);
+                console.error('Error fetching auth details:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAuthDetails();
+    }, [PARTNER_ID]);
+
+    const handleAuthMethodChange = (e) => {
+        setAuthMethod(e.target.value);
+    };
+
+    const handleApikeyChange = (e) => {
+        setApiKey(e.target.value);
+    };
+
+    const handleOauthChange = (e) => {
+        const { name, value } = e.target;
+        setOauthDetails(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleJwtChange = (e) => {
+        const { name, value } = e.target;
+        setJwtDetails(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleBack = () => {
+        backward();
+    };
+
+    const handleProceed = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // Prepare the request payload based on selected auth method
+            let payload = {
+                partnerId: PARTNER_ID,
+                authType: authMethod.toUpperCase()
+            };
+
+            // Add the appropriate auth details based on method
+            switch (authMethod) {
+                case 'apiKey':
+                    payload = {
+                        ...payload,
+                        authType: 'API-KEY',
+                        apikey: { apikey: apiKey }
+                    };
+                    break;
+                case 'oauth':
+                    payload = {
+                        ...payload,
+                        authType: 'OAUTH',
+                        authCredentials: {
+                            username: oauthDetails.username,
+                            password: oauthDetails.password
+                        }
+                    };
+                    break;
+                case 'jwt':
+                    payload = {
+                        ...payload,
+                        authType: 'JWT',
+                        jwt: {
+                            username: jwtDetails.username,
+                            password: jwtDetails.password
+                        }
+                    };
+                    break;
+                default:
+                    throw new Error('Invalid authentication method');
+            }
+
+            // Make the API call
+            const response = await axios.post(API_BASE_URL, payload);
+            
+            console.log('Auth saved successfully:', response.data);
+            // You might want to show a success message or redirect here
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+            console.error('Error saving auth details:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Box sx={{ p: 0 }}>
+            {isLoading && <Typography>Loading...</Typography>}
+            {error && <Typography color="error">Error: {error}</Typography>}
+            
+            <Grid container spacing={7}>
+                <Grid item xs={12}>
+                    <Box>
+                        <Typography sx={{ marginTop: "25px" }}>Authentication:</Typography>
+                        <StyledSelect
+                            value={authMethod}
+                            onChange={handleAuthMethodChange}
+                            style={{ marginTop: "7px", width: "250px" }}
+                        >
+                            <MenuItem value="apiKey">API Key</MenuItem>
+                            <MenuItem value="oauth">OAuth</MenuItem>
+                            <MenuItem value="jwt">JWT</MenuItem>
+                            <MenuItem value="select"><em>Select</em></MenuItem>
+                        </StyledSelect>
+                    </Box>
+                </Grid>
+
+                {authMethod === 'apiKey' && (
+                    <Grid item xs={12}>
+                        <Box sx={{ marginTop: '0px' }}>
+                            <Typography>Api Key:</Typography>
+                            <TextField
+                                variant="outlined"
+                                value={apiKey}
+                                onChange={handleApikeyChange}
+                                className="mb-0"
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                            />
+                        </Box>
+                        <Box display="flex" justifyContent="flex-end" alignItems="baseline" mt={2}>
+                            <Back
+                                variant="contained"
+                                onClick={handleBack}
+                                sx={{ height: "35px", marginRight: "10px" }}>
+                                Back
+                            </Back>
+                            <Save 
+                                variant="contained"
+                                onClick={handleProceed}
+                                disabled={isLoading}
+                                sx={{ height: "35px" }}>
+                                {isLoading ? 'Saving...' : 'Proceed'}
+                            </Save>
+                        </Box>
+                    </Grid>
+                )}
+
+                {authMethod === 'oauth' && (
+                    <Grid item xs={12}>
+                        <Box sx={{ marginTop: '0px' }}>
+                            <Typography>Username:</Typography>
+                            <TextField
+                                name="username"
+                                variant='outlined'
+                                value={oauthDetails.username}
+                                onChange={handleOauthChange}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                            />
+                            <Box sx={{ marginTop: '35px' }}></Box>
+                            <Typography>Password:</Typography>
+                            <TextField
+                                name="password"
+                                variant='outlined'
+                                type='password'
+                                value={oauthDetails.password}
+                                onChange={handleOauthChange}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                            />
+                        </Box>
+                        <Box display="flex" justifyContent="flex-end" alignItems="baseline" mt={2}>
+                            <Back
+                                variant="contained"
+                                onClick={handleBack}
+                                sx={{ height: "35px", marginRight: "10px" }}>
+                                Back
+                            </Back>
+                            <Save 
+                                variant="contained"
+                                onClick={handleProceed}
+                                disabled={isLoading}
+                                sx={{ height: "35px" }}>
+                                {isLoading ? 'Saving...' : 'Proceed'}
+                            </Save>
+                        </Box>
+                    </Grid>
+                )}
+
+                {authMethod === 'jwt' && (
+                    <Grid item xs={12}>
+                        <Box sx={{ marginTop: '0px' }}>
+                            <Typography>Username:</Typography>
+                            <TextField
+                                name="username"
+                                variant='outlined'
+                                value={jwtDetails.username}
+                                onChange={handleJwtChange}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                            />
+                            <Box sx={{ marginTop: '35px' }}></Box>
+                            <Typography>Password:</Typography>
+                            <TextField
+                                name="password"
+                                variant='outlined'
+                                type='password'
+                                value={jwtDetails.password}
+                                onChange={handleJwtChange}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                            />
+                            <Box sx={{ marginTop: '35px' }}></Box>
+                            <Typography>Algorithm:</Typography>
+                            <TextField
+                                disabled
+                                variant='outlined'
+                                value='HS256'
+                                sx={{
+                                    '& .MuiOutlinedInput-root': { height: '40px', width: '250px' },
+                                    '& .MuiInputBase-input': { padding: '12px 18px', display: 'flex', alignItems: 'center' }
+                                }}
+                                InputProps={{
+                                    readOnly: true,
+                                }}
+                            />
+                        </Box>
+                        <Box display="flex" justifyContent="flex-end" alignItems="baseline" mt={2}>
+                            <Back
+                                variant="contained"
+                                onClick={handleBack}
+                                sx={{ height: "35px", marginRight: "10px" }}>
+                                Back
+                            </Back>
+                            <Save 
+                                variant="contained"
+                                onClick={handleProceed}
+                                disabled={isLoading}
+                                sx={{ height: "35px" }}>
+                                {isLoading ? 'Saving...' : 'Proceed'}
+                            </Save>
+                        </Box>
+                    </Grid>
+                )}
+            </Grid>
+        </Box>
+    );
+};
+
+export default Authentication;
